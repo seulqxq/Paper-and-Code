@@ -26,6 +26,7 @@ class CrossAttentionEncoder(nn.Module):
         self.q_proj_in = nn.Linear(q_in_channels, dim, bias=True)
         self.kv_proj_in = nn.Linear(kv_in_channels, dim, bias=True)
 
+        # corss attention + 8 * self attention
         self.blocks = nn.ModuleList(
             [
                 DiTBlock(
@@ -236,6 +237,8 @@ class PartEncoder(ModelMixin, ConfigMixin):
         whole_positions, whole_features = whole[..., :position_channels], whole[..., position_channels:]
         # KV: [position embedding + normals + mask] Pos(X + M) 点云位置进行位置编码 + 法线 + 掩码（incomplete part point cloud）
         whole_kv = torch.cat([self.embedder(whole_positions), whole_features], dim=-1) # [position + normals + mask]
+
+        # Context-Aware Attention encode输出，Context latents
         whole_cond = self.encoder_context(part_q, whole_kv)
 
         if self.config.part_local:
@@ -245,13 +248,14 @@ class PartEncoder(ModelMixin, ConfigMixin):
                 sampled_part_local[..., :position_channels],
                 sampled_part_local[..., position_channels:],
             )
+            # q: [position + normals] subsample
             part_local_q = torch.cat([self.embedder(part_local_sampled_positions), part_local_sampled_features], dim=-1)
             part_local_positions, part_local_features = part_local[..., :position_channels], part_local[..., position_channels:]
+            # kv: [position + normals]           
             part_local_kv = torch.cat([self.embedder(part_local_positions), part_local_features], dim=-1)
             
-            # q: [position + normals] subsample
-            # kv: [position + normals]
-            part_cond = self.encoder_local(part_local_q, part_local_kv)
+            # Local Attention encode输出，Local latents
+            part_cond = self.encoder_local(part_local_q, part_local_kv) # Local Attention encode
         else:
             part_cond = None
 
