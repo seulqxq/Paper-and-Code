@@ -160,7 +160,7 @@ class HoloPartPipeline(DiffusionPipeline, TransformerDiffusionMixin):
             part_local_surface = part_local_surface.to(device=device, dtype=dtype)
         
         whole_embeds, part_embeds = self.part_encoder(part=part_surface, whole=whole_surface, part_local=part_local_surface, noise_level=noise_strength)
-        uncond_whole_embeds = torch.zeros_like(whole_embeds) if whole_embeds is not None else None
+        uncond_whole_embeds = torch.zeros_like(whole_embeds) if whole_embeds is not None else None  # 无条件数据
         uncond_part_embeds = torch.zeros_like(part_embeds) if part_embeds is not None else None
 
         return part_embeds, whole_embeds, uncond_part_embeds, uncond_whole_embeds
@@ -221,9 +221,11 @@ class HoloPartPipeline(DiffusionPipeline, TransformerDiffusionMixin):
 
         device = self._execution_device
 
-        # 3. Encode condition
+        # 3. Encode condition 
+        # Local Latents, Context Latents
         part_embeds, whole_embeds, negative_part_embeds, negative_whole_embeds = self.encode_context_local(part_surface, whole_surface, part_local_surface, cond_noise_strength, device)
 
+        # image: 从3D模型中渲染而来， 论文 3D shape Diffusion 部分，用于预测V
         if image is not None:
             image_embeds_clip, negative_image_embeds_clip = self.encode_image_clip(image, device)
         else:
@@ -245,10 +247,11 @@ class HoloPartPipeline(DiffusionPipeline, TransformerDiffusionMixin):
 
         # 5. Prepare latent variables
         # num_tokens = self.transformer.config.width
-        num_channels_latents = self.transformer.config.in_channels
+        num_channels_latents = self.transformer.config.in_channels  # 64
+        # [B, N, C] = [B, 2048, 64]
         latents = self.prepare_latents(
             batch_size * num_images_per_prompt,
-            num_tokens,
+            num_tokens,     # 2048
             num_channels_latents,
             whole_embeds.dtype,
             device,

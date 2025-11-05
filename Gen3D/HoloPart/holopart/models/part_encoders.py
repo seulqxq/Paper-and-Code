@@ -271,4 +271,6 @@ class PartEncoder(ModelMixin, ConfigMixin):
 
             # print("sigmas = ", sigmas)
 
+        # 返回 Context-Aware 和 Local Attention的编码结果
+        # Context Latents, Local Latents
         return whole_cond, part_cond

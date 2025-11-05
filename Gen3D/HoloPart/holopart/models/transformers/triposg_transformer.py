@@ -810,6 +810,7 @@ class TripoSGDiTModel(ModelMixin, ConfigMixin, PeftAdapterMixin):
                     "Passing `scale` via `attention_kwargs` when not using the PEFT backend is ineffective."
                 )
 
+        # hidden_states: [B, N, C] = [B, 2048, 64]
         _, N, _ = hidden_states.shape
 
         temb = self.time_embed(timestep).to(hidden_states.dtype)
