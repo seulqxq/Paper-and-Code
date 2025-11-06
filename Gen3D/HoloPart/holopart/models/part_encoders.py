@@ -12,6 +12,8 @@ from .autoencoders.autoencoder_kl_triposg import TripoSGEncoder
 from ..schedulers.scheduling_rectified_flow import RectifiedFlowScheduler, compute_density_for_timestep_sampling
 from ..utils.typing import *
 
+
+# Context-Aware Attention 中的 Cross-Attention
 class CrossAttentionEncoder(nn.Module):
     def __init__(
         self,

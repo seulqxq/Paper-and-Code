@@ -187,17 +187,17 @@ class DiTBlock(nn.Module):
     ):
         super().__init__()
 
-        self.use_self_attention = use_self_attention
-        self.use_cross_attention = use_cross_attention
-        self.use_cross_attention_2 = use_cross_attention_2
-        self.skip_concat_front = skip_concat_front
+        self.use_self_attention = use_self_attention    # True
+        self.use_cross_attention = use_cross_attention  # True
+        self.use_cross_attention_2 = use_cross_attention_2  # True
+        self.skip_concat_front = skip_concat_front          # True
         self.skip_norm_last = skip_norm_last
-        self.dim = dim
-        self.num_attention_heads = num_attention_heads
-        self.norm_eps = norm_eps
-        self.norm_elementwise_affine = norm_elementwise_affine
-        self.qk_norm = qk_norm
-        self.qkv_bias = qkv_bias
+        self.dim = dim                                      # 2048
+        self.num_attention_heads = num_attention_heads      # 16
+        self.norm_eps = norm_eps                            # 1e-5
+        self.norm_elementwise_affine = norm_elementwise_affine  # True
+        self.qk_norm = qk_norm                                  # True
+        self.qkv_bias = qkv_bias                                # False
         self.gradient_checkpointing = False
         # Define 3 blocks. Each block has its own normalization layer.
         # NOTE: when new version comes, check norm2 and norm 3
@@ -391,7 +391,7 @@ class DiTBlock(nn.Module):
 
     def _forward(
         self,
-        hidden_states: torch.Tensor,
+        hidden_states: torch.Tensor,        # [B, N + 1, 2048] latent tokens + time
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_hidden_states_2: Optional[torch.Tensor] = None,
         temb: Optional[torch.Tensor] = None,
@@ -432,7 +432,9 @@ class DiTBlock(nn.Module):
             )
             hidden_states = hidden_states + attn_output
 
-        # 2. Cross-Attention
+        # 2. Cross-Attention 
+        # a. cross attention with part embedding: encoder hidden states --> part embedding
+        # b. cross attention with whole embedding: encoder hidden states 2 --> whole embedding
         hidden_states = self._forward_cross_attention(
             hidden_states,
             (
@@ -500,6 +502,7 @@ class DiTBlock(nn.Module):
                 additional_cross_attention_kwargs,
             )
 
+# 3D shape Diffusion
 class TripoSGDiTModel(ModelMixin, ConfigMixin, PeftAdapterMixin):
     """
     TripoSGDiT: Diffusion model with a Transformer backbone.
@@ -579,15 +582,15 @@ class TripoSGDiTModel(ModelMixin, ConfigMixin, PeftAdapterMixin):
         self.blocks = nn.ModuleList(
             [
                 DiTBlock(
-                    dim=self.inner_dim,
-                    num_attention_heads=self.config.num_attention_heads,
+                    dim=self.inner_dim, # 2048
+                    num_attention_heads=self.config.num_attention_heads,    # 16
                     use_self_attention=True,
-                    use_cross_attention=use_cross_attention,
+                    use_cross_attention=use_cross_attention,    # True
                     self_attention_norm_type="fp32_layer_norm",
-                    cross_attention_dim=self.config.cross_attention_dim,
+                    cross_attention_dim=self.config.cross_attention_dim,    # 512
                     cross_attention_norm_type=None,
-                    use_cross_attention_2=use_cross_attention_2,
-                    cross_attention_2_dim=self.config.cross_attention_2_dim,
+                    use_cross_attention_2=use_cross_attention_2,    # True
+                    cross_attention_2_dim=self.config.cross_attention_2_dim,  # 512
                     cross_attention_2_norm_type=None,
                     activation_fn="gelu",
                     norm_type="fp32_layer_norm",  # TODO
@@ -810,8 +813,8 @@ class TripoSGDiTModel(ModelMixin, ConfigMixin, PeftAdapterMixin):
                     "Passing `scale` via `attention_kwargs` when not using the PEFT backend is ineffective."
                 )
 
-        # hidden_states: [B, N, C] = [B, 2048, 64]
-        _, N, _ = hidden_states.shape
+        # hidden_states --> latents [B, N, C] = [B, 2048, 64]
+        _, N, _ = hidden_states.shape # token length 
 
         temb = self.time_embed(timestep).to(hidden_states.dtype)
         temb = self.time_proj(temb)
@@ -819,7 +822,7 @@ class TripoSGDiTModel(ModelMixin, ConfigMixin, PeftAdapterMixin):
 
         hidden_states = self.proj_in(hidden_states)
 
-        # N + 1 token
+        # N + 1 token [B, N + 1, C], C: 64 --> 2048
         hidden_states = torch.cat([temb, hidden_states], dim=1)
 
         skips = []

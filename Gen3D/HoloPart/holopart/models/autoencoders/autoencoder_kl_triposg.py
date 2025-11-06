@@ -22,7 +22,7 @@ from .vae import DiagonalGaussianDistribution
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
-
+# Local Attention 中的 Cross-Attention
 class TripoSGEncoder(nn.Module):
     def __init__(
         self,

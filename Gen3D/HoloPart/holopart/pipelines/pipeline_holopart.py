@@ -285,7 +285,9 @@ class HoloPartPipeline(DiffusionPipeline, TransformerDiffusionMixin):
                 )
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0])
-
+                
+                # 进入Transformer Diffusion（DiT）模型，进行预测 
+                # self.transformer --> 3D shape Diffusion
                 noise_pred = self.transformer(
                     latent_model_input,
                     timestep,
