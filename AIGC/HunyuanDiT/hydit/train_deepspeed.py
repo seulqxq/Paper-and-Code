@@ -573,6 +573,8 @@ def main(args):
 
         logger.info(f"    Beginning epoch {epoch}...")
         for batch in loader:
+            # latents: encode image and sample, then mul scale factor of vae
+            # model_kwargs: model conditions
             latents, model_kwargs = prepare_model_inputs(
                 args, batch, device, vae, text_encoder, text_encoder_t5, freqs_cis_img
             )
