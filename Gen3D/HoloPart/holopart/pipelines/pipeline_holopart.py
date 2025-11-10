@@ -310,7 +310,7 @@ class HoloPartPipeline(DiffusionPipeline, TransformerDiffusionMixin):
                 latents = self.scheduler.step(
                     noise_pred, t, latents, return_dict=False
                 )[0]
-
+ 
                 if latents.dtype != latents_dtype:
                     if torch.backends.mps.is_available():
                         # some platforms (eg. apple mps) misbehave due to a pytorch bug: https://github.com/pytorch/pytorch/pull/99272

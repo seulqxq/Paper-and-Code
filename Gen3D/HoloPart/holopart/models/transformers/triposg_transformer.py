@@ -196,7 +196,7 @@ class DiTBlock(nn.Module):
         self.num_attention_heads = num_attention_heads      # 16
         self.norm_eps = norm_eps                            # 1e-5
         self.norm_elementwise_affine = norm_elementwise_affine  # True
-        self.qk_norm = qk_norm                                  # True
+        self.qk_norm = qk_norm                                  # True  
         self.qkv_bias = qkv_bias                                # False
         self.gradient_checkpointing = False
         # Define 3 blocks. Each block has its own normalization layer.
